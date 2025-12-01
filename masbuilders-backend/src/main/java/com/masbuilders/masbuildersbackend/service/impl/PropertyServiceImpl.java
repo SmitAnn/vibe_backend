@@ -239,4 +239,10 @@ public class PropertyServiceImpl implements PropertyService {
         }
     }
 
+    @Override
+    public Property getPropertyById(String id) {
+        return propertyRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Property not found with id: " + id));
+    }
+
 }

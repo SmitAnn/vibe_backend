@@ -1,13 +1,13 @@
 package com.masbuilders.masbuildersbackend.config;
 
-
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-
 import java.security.Key;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 
 @Component
 public class JwtUtil {
@@ -22,12 +22,16 @@ public class JwtUtil {
         return Keys.hmacShaKeyFor(jwtSecret.getBytes());
     }
 
-    // Create token with email as subject
-    public String generateToken(String email) {
+    // ✅ Create token with email + role
+    public String generateToken(String email, String role) {
         Date now = new Date();
         Date expiry = new Date(now.getTime() + jwtExpirationMs);
 
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("role", "ROLE_" + role); // Spring requires ROLE_ prefix
+
         return Jwts.builder()
+                .setClaims(claims)
                 .setSubject(email)
                 .setIssuedAt(now)
                 .setExpiration(expiry)
@@ -37,6 +41,11 @@ public class JwtUtil {
 
     public String extractUsername(String token) {
         return parseClaims(token).getBody().getSubject();
+    }
+
+    public String extractRole(String token) {
+        Object role = parseClaims(token).getBody().get("role");
+        return role != null ? role.toString() : null;
     }
 
     public boolean validateToken(String token) {
@@ -55,4 +64,3 @@ public class JwtUtil {
                 .parseClaimsJws(token);
     }
 }
-

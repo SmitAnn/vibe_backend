@@ -14,4 +14,7 @@ public interface NotificationService {
     Notification markAsRead(String id);
 
     void deleteNotification(String id);
+
+    // 🆕 Helper for seller favorites
+    Notification notifySellerOnFavorite(String propertyId, String buyerEmail);
 }

@@ -29,6 +29,7 @@ public interface PropertyService {
     List<Property> approveMultipleProperties(List<String> propertyIds);
 
     Property changeStatus(String propertyId, PropertyStatus status);
+    Property getPropertyById(String id);
 
     // Search
     Page<Property> searchProperties(
