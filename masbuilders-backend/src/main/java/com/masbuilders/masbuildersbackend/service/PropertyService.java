@@ -9,10 +9,14 @@ import java.util.List;
 
 public interface PropertyService {
 
-    // Buyer
+    // ==========================
+    // 💡 Buyer Methods
+    // ==========================
     List<Property> getAllApprovedProperties();
 
-    // Seller
+    // ==========================
+    // 🏠 Seller Methods
+    // ==========================
     Property addProperty(Property property, String sellerId);
 
     List<Property> getSellerProperties(String sellerId);
@@ -21,7 +25,9 @@ public interface PropertyService {
 
     void deleteProperty(String propertyId, String sellerId);
 
-    // Admin
+    // ==========================
+    // 🧑‍💼 Admin Methods
+    // ==========================
     List<Property> getPendingProperties();
 
     Property approveProperty(String propertyId);
@@ -29,9 +35,12 @@ public interface PropertyService {
     List<Property> approveMultipleProperties(List<String> propertyIds);
 
     Property changeStatus(String propertyId, PropertyStatus status);
+
     Property getPropertyById(String id);
 
-    // Search
+    // ==========================
+    // 🔍 Search & Filter
+    // ==========================
     Page<Property> searchProperties(
             String city,
             String locality,
@@ -48,6 +57,19 @@ public interface PropertyService {
             String sortDir
     );
 
-    // IMAGE UPLOAD
+    // ==========================
+    // 📸 Image Upload
+    // ==========================
     String uploadPropertyImage(MultipartFile file);
+
+    // ==========================
+    // 📊 Analytics Methods (NEW)
+    // ==========================
+    long countAll();
+
+    long countByStatus(PropertyStatus status);
+
+    long countUsersByRole(String role);
+
+    long countTotalFavorites();
 }

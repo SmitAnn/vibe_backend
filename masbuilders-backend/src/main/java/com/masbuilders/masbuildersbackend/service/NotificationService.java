@@ -1,6 +1,7 @@
 package com.masbuilders.masbuildersbackend.service;
 
 import com.masbuilders.masbuildersbackend.entity.Notification;
+
 import java.util.List;
 
 public interface NotificationService {
@@ -15,6 +16,8 @@ public interface NotificationService {
 
     void deleteNotification(String id);
 
-    // 🆕 Helper for seller favorites
-    Notification notifySellerOnFavorite(String propertyId, String buyerEmail);
+    // Custom logic
+    void notifySellerOnFavorite(String propertyId, String buyerEmail);
+
+    void notifyAdmin(String title, String message);
 }

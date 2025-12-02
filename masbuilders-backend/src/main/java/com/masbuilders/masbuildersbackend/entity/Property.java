@@ -21,12 +21,8 @@ public class Property {
     private String title;
     private String description;
 
-
     private String propertyType;
-
-
     private Integer bhk;
-
     private String listingType;
 
     private String city;
@@ -38,6 +34,10 @@ public class Property {
 
     private List<String> imageUrls;
     private String videoUrl;
+
+    // 🌍 NEW FIELDS: Coordinates for Map View
+    private Double latitude;   // e.g. 12.9716
+    private Double longitude;  // e.g. 77.5946
 
     // PENDING / APPROVED / REJECTED
     private PropertyStatus status = PropertyStatus.PENDING;

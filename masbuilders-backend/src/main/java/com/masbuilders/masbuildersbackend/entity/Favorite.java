@@ -4,7 +4,7 @@ import lombok.*;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 @Data
 @NoArgsConstructor
@@ -16,5 +16,5 @@ public class Favorite {
     private String id;
     private String buyerEmail;
     private String propertyId;
-    private LocalDateTime createdAt;
+    private Instant createdAt;
 }

@@ -7,22 +7,17 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-import java.io.IOException;
-import java.time.Instant;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
+import java.io.IOException;
+import java.nio.file.*;
+import java.time.Instant;
+import java.util.*;
 
 @RestController
 @RequestMapping("/api/properties")
-//@CrossOrigin(origins = "http://localhost:3000", allowCredentials = "true")
+@CrossOrigin(origins = "http://localhost:3000", allowCredentials = "true") // ✅ Frontend access
 public class PropertyController {
 
     private final PropertyService propertyService;
@@ -32,26 +27,28 @@ public class PropertyController {
         this.propertyService = propertyService;
     }
 
-    // ----------------- BUYER (ALL APPROVED) -----------------
-    @GetMapping("/approved")
-    public List<Property> getApprovedProperties() {
-        return propertyService.getAllApprovedProperties();
-    }
-
-    // ✅ FIX: Get Property by ID (for details page)
+    // ----------------- ✅ GET PROPERTY BY ID -----------------
+    // ✅ Fetch single property by ID (used in Edit + Details pages)
     @GetMapping("/{id}")
     public ResponseEntity<?> getPropertyById(@PathVariable String id) {
         try {
             Property property = propertyService.getPropertyById(id);
-            return property != null
-                    ? ResponseEntity.ok(property)
-                    : ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body("Property not found with ID: " + id);
+            if (property == null) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(Map.of("error", "Property not found with ID: " + id));
+            }
+            return ResponseEntity.ok(property);
         } catch (Exception e) {
-            logger.error("❌ Error fetching property {}: {}", id, e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Error fetching property details");
+                    .body(Map.of("error", "Failed to fetch property", "details", e.getMessage()));
         }
+    }
+
+
+    // ----------------- BUYER (ALL APPROVED) -----------------
+    @GetMapping("/approved")
+    public List<Property> getApprovedProperties() {
+        return propertyService.getAllApprovedProperties();
     }
 
     // ----------------- SEARCH + FILTER + PAGINATION -----------------
@@ -94,7 +91,6 @@ public class PropertyController {
 
             List<String> imagePaths = new ArrayList<>();
 
-            // ✅ Handle image uploads
             if (images != null && !images.isEmpty()) {
                 for (MultipartFile image : images) {
                     String fileName = UUID.randomUUID() + "_" + image.getOriginalFilename();
@@ -104,7 +100,6 @@ public class PropertyController {
                 }
             }
 
-            // ✅ Handle video upload
             String videoUrl = null;
             if (video != null && !video.isEmpty()) {
                 String videoName = UUID.randomUUID() + "_" + video.getOriginalFilename();
@@ -127,11 +122,11 @@ public class PropertyController {
         } catch (IOException e) {
             logger.error("❌ IO Error while saving property for seller {}: {}", sellerId, e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Error saving property files: " + e.getMessage());
+                    .body(Map.of("error", "Error saving property files: " + e.getMessage()));
         } catch (Exception e) {
             logger.error("❌ Unexpected error while adding property for seller {}: {}", sellerId, e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Error saving property: " + e.getMessage());
+                    .body(Map.of("error", "Error saving property: " + e.getMessage()));
         }
     }
 
@@ -142,14 +137,20 @@ public class PropertyController {
 
     // ✅ Update Property - JSON Only
     @PutMapping("/update/{propertyId}/{sellerId}")
-    public Property updateProperty(
+    public ResponseEntity<?> updateProperty(
             @PathVariable String propertyId,
             @PathVariable String sellerId,
             @RequestBody Property property) {
-        return propertyService.updateProperty(propertyId, property, sellerId);
+        try {
+            Property updated = propertyService.updateProperty(propertyId, property, sellerId);
+            return ResponseEntity.ok(updated);
+        } catch (Exception e) {
+            logger.error("❌ Error updating property {}: {}", propertyId, e.getMessage());
+            return ResponseEntity.status(500).body(Map.of("error", e.getMessage()));
+        }
     }
 
-    // ✅ Update Property - Multipart (with new images/videos)
+    // ✅ Update Property - Multipart (images/videos)
     @PostMapping(value = "/update/{propertyId}/{sellerId}", consumes = "multipart/form-data")
     public ResponseEntity<?> updatePropertyWithMedia(
             @PathVariable String propertyId,
@@ -162,7 +163,6 @@ public class PropertyController {
             Files.createDirectories(Paths.get("uploads/images"));
             Files.createDirectories(Paths.get("uploads/videos"));
 
-            // Handle image uploads
             if (images != null && !images.isEmpty()) {
                 List<String> imagePaths = new ArrayList<>();
                 for (MultipartFile image : images) {
@@ -174,7 +174,6 @@ public class PropertyController {
                 property.setImageUrls(imagePaths);
             }
 
-            // Handle video upload
             if (video != null && !video.isEmpty()) {
                 String videoName = UUID.randomUUID() + "_" + video.getOriginalFilename();
                 Path videoPath = Paths.get("uploads/videos/" + videoName);
@@ -189,20 +188,25 @@ public class PropertyController {
             return ResponseEntity.ok(updated);
 
         } catch (IOException e) {
-            return ResponseEntity.status(500).body("Error updating property files: " + e.getMessage());
+            return ResponseEntity.status(500).body(Map.of("error", "Error updating property files: " + e.getMessage()));
         } catch (Exception e) {
-            return ResponseEntity.status(500).body("Error updating property: " + e.getMessage());
+            return ResponseEntity.status(500).body(Map.of("error", "Error updating property: " + e.getMessage()));
         }
     }
 
+    // ----------------- DELETE -----------------
     @DeleteMapping("/delete/{propertyId}/{sellerId}")
-    public String deleteProperty(@PathVariable String propertyId,
-                                 @PathVariable String sellerId) {
-        propertyService.deleteProperty(propertyId, sellerId);
-        return "Property Deleted Successfully";
+    public ResponseEntity<?> deleteProperty(@PathVariable String propertyId,
+                                            @PathVariable String sellerId) {
+        try {
+            propertyService.deleteProperty(propertyId, sellerId);
+            return ResponseEntity.ok(Map.of("message", "Property deleted successfully"));
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(Map.of("error", e.getMessage()));
+        }
     }
 
-    // ----------------- ✅ IMAGE UPLOAD -----------------
+    // ----------------- UPLOAD IMAGE -----------------
     @PostMapping("/upload/image")
     public ResponseEntity<String> uploadImage(@RequestParam("file") MultipartFile file) throws IOException {
         String uploadDir = "uploads/images/";
@@ -215,7 +219,7 @@ public class PropertyController {
         return ResponseEntity.ok("/uploads/images/" + fileName);
     }
 
-    // ----------------- ✅ VIDEO UPLOAD -----------------
+    // ----------------- UPLOAD VIDEO -----------------
     @PostMapping("/upload/video")
     public ResponseEntity<String> uploadVideo(@RequestParam("file") MultipartFile file) throws IOException {
         String uploadDir = "uploads/videos/";

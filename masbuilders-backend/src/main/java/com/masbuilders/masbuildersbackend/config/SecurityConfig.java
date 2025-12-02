@@ -2,12 +2,12 @@ package com.masbuilders.masbuildersbackend.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.http.HttpMethod;
 
 @Configuration
 @EnableMethodSecurity
@@ -39,11 +39,20 @@ public class SecurityConfig {
 
                         // ✅ Public endpoints
                         .requestMatchers(
-                                "/api/auth/**",            // login/register
-                                "/uploads/**",             // static files
+                                "/api/auth/**",             // login/register
+                                "/uploads/**",              // static files
                                 "/api/properties/approved", // buyer browsing
                                 "/api/properties/search"    // buyer filters
                         ).permitAll()
+
+                        // ✅ Buyer favorites (allow add/remove/view)
+                        .requestMatchers(
+                                "/api/buyer/favorites/**",
+                                "/api/buyer/favorites/*"
+                        ).permitAll()
+
+                        // ✅ Buyer interests (optional, also allow)
+                        .requestMatchers("/api/buyer/interest/**").permitAll()
 
                         // ✅ Admin routes
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
@@ -56,13 +65,15 @@ public class SecurityConfig {
                                 "/api/properties/seller/**"
                         ).hasRole("SELLER")
 
-                        // ✅ Notifications (authenticated)
-                        .requestMatchers("/api/notifications/**").authenticated()
+                        // ✅ Notifications
+                        // Sellers → can access their own via /my
+                        .requestMatchers("/api/notifications/my/**").authenticated()
+                        // Admin → can access all notifications
+                        .requestMatchers("/api/notifications/**").hasAnyRole("ADMIN")
 
                         // ✅ Everything else
                         .anyRequest().authenticated()
                 )
-
 
                 // 🔑 Add JWT validation filter before Spring's auth
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
